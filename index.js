@@ -40,6 +40,16 @@ async function run() {
         res.send(result);
     })
 
+    app.get("/popular", async (req, res) => {
+        const query = { category: "popular" };
+        const options = {
+          projection: { _id: 1, image: 1, name: 1, description: 1, instructor: 1 },
+        };
+        const cursor = classesCollection.find(query, options).limit(6);
+        const result = await cursor.toArray();
+        res.send(result);
+      });
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
