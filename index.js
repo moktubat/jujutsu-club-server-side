@@ -43,13 +43,25 @@ async function run() {
     app.get("/popularClass", async (req, res) => {
       try {
         const popularClass = await classesCollection.find().toArray();
-        const sortedData = popularClass.sort(
-          (a, b) => b.students - a.students
-        );
+        const sortedData = popularClass.sort((a, b) => b.students - a.students);
 
         const sixStudents = sortedData.slice(0, 6);
 
         res.send(sixStudents);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error: " + error.message);
+      }
+    });
+
+    app.get("/popularInstructor", async (req, res) => {
+      try {
+        const popularInstructor = await instructorsCollection.find().toArray();
+        const sortedData = popularInstructor.sort((a, b) => b.students - a.students);
+
+        const sixInstructor = sortedData.slice(0, 6);
+
+        res.send(sixInstructor);
       } catch (error) {
         console.log(error);
         res.status(500).send("Internal Server Error: " + error.message);
