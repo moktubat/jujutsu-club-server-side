@@ -26,9 +26,8 @@ async function run() {
     await client.connect();
 
     const classesCollection = client.db("sumCampDB").collection("classes");
-    const instructorsCollection = client
-      .db("sumCampDB")
-      .collection("instructors");
+    const instructorsCollection = client.db("sumCampDB").collection("instructors");
+    const selectedCollection = client.db("sumCampDB").collection("selected");
 
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
@@ -67,6 +66,14 @@ async function run() {
         res.status(500).send("Internal Server Error: " + error.message);
       }
     });
+
+    // selected classes
+    app.post('/selected', async(req, res) => {
+      const item = req.body;
+      console.log(item);
+      const result = await selectedCollection.insertOne(item);
+      res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
