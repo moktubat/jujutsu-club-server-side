@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const stripe = require('stripe')(process.env.PAYMENT_TOKEN_SECRET);
+const stripe = require("stripe")(process.env.PAYMENT_TOKEN_SECRET);
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -71,6 +71,7 @@ async function run() {
       .db("sumCampDB")
       .collection("instructors");
     const selectedCollection = client.db("sumCampDB").collection("selected");
+    const paymentsCollection = client.db("sumCampDB").collection("payments");
 
     // user related api
     app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
@@ -185,19 +186,36 @@ async function run() {
       res.send({ deleteCount: result.deletedCount });
     });
 
-    app.post('/create-payment-intent', async(req, res) => {
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
+      if (typeof price !== "number" || price < 1) {
+        return res.status(400).send({ error: "Invalid price value" });
+      }
+
       const amount = price * 100;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['cars']
+        currency: "usd",
+        payment_method_types: ["card"],
       });
       res.send({
-        clientSecret: paymentIntent.client_secret
-      })
-    })
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
+    app.get("/payments", async (req, res) => {
+      const result = await paymentsCollection.find().toArray();
+      res.send(result);
+    });
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentsCollection.insertOne(payment);
+      const query = {
+        _id: { $in: payment.selectItems.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await selectedCollection.deleteMany(query);
+      res.send({ insertResult, deleteResult });
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
